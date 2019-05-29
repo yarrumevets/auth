@@ -41,7 +41,7 @@ app.use(bodyParser.json());
 app.use((req, res, next) => {
   console.log(new Date().toISOString());
   // Create a secret key with the user's IP. Will have to login again from another location.
-  tokenSecret = "timhortons" + req.ip; // @TODO: test/fix this.
+  tokenSecret = secret.tokenSecret + req.ip; // @TODO: test/fix this.
   next();
 });
 

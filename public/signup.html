@@ -1,0 +1,194 @@
+<html>
+  <head>
+    <title>yarrumevets.com | sign-up</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+      let appPath;
+
+      // Check for an existing username &/or email address.
+      function checkExistingUsernAndEmail() {
+        // Form data.
+        const username = $("#username").val();
+        const email = $("#email").val();
+        const formData = {
+          username,
+          email
+        };
+        $.ajax({
+          url: "/" + appPath + "/check",
+          type: "post",
+          contentType: "application/json",
+          processData: false,
+          data: JSON.stringify(formData),
+          success: function(data, textStatus, jQxhr) {
+            console.log("data: ", data);
+            $("#userCheckDisplayOk").html("Username and password available.");
+          },
+          error: function(jqXhr, textStatus, errorThrown) {
+            $("#userCheckDisplayErr").html("Username or email already taken.");
+            console.log("err");
+          }
+        });
+      }
+
+      // Check for the username or email in the database.
+      $(document).ready(function() {
+        appPath = window.location.pathname.split("/")[1]; //
+
+        /*
+          @TODO:
+          - captcha
+          - email verification
+          - live validation feedback
+          - add the check existing user/email function call to doPost. update to use promises.
+        */
+
+        // Clear errors when a field is focused.
+        $(":input").focus(() => {
+          console.log("focus...");
+          $("#validationDisplay").html(" ");
+          $("#userCheckDisplayErr").html(" ");
+          $("#userCheckDisplayOk").html(" ");
+        });
+
+        // check user exists
+        $("#checkUserOrEmailExistsButton").click(e => {
+          e.preventDefault();
+          e.stopPropagation();
+          checkExistingUsernAndEmail();
+        });
+
+        // Do the sign-up
+        $("#signUpButton").click(function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Form data.
+          const username = $("#username").val();
+          const email = $("#email").val();
+          const firstName = $("#firstName").val();
+          const lastName = $("#lastName").val();
+          const password = $("#password").val();
+          const passwordRepeat = $("#passwordRepeat").val();
+
+          // Validation.
+          const nameRegex = /^([a-zA-Z]){1,16}$/; // 2 to 16 letters.
+          const usernameRegex = /^[a-zA-Z]([a-zA-Z0-9]){3,16}$/; // 4 to 16 letters or numbers, first must be a letter.
+          const passwordRegex = /^([a-zA-Z0-9!@#$%&*~?\-.=_+^]){8,32}$/; // 8 to 32 characters
+          const emailRegex = /[a-zA-Z0-9_\.\+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-\.]+/;
+          let errors = [];
+          if (password !== passwordRepeat) errors.push("Passwords don't match");
+          if (!usernameRegex.test(username)) errors.push("Invalid username");
+          if (!nameRegex.test(firstName)) errors.push("Invalid first name");
+          if (!nameRegex.test(lastName)) errors.push("Invalid last name");
+          if (!emailRegex.test(email)) errors.push("Invalid email");
+          if (!passwordRegex.test(password)) errors.push("Invalid password");
+          if (errors.length) {
+            let errorMessageText = errors[0];
+            if (errors[1]) errorMessageText += ", " + errors[1];
+            if (errors.length > 2) errorMessageText += ", ...";
+            $("#validationDisplay").html(errorMessageText);
+            console.log("Validation errors: ", errors);
+            return;
+          }
+
+          const formData = {
+            username,
+            email,
+            firstName,
+            lastName,
+            password
+          };
+
+          $.ajax({
+            url: "/" + appPath + "/signup",
+            type: "post",
+            contentType: "application/json",
+            processData: false,
+            data: JSON.stringify(formData),
+            success: function(data, textStatus, jQxhr) {
+              console.log("data: ", data);
+              console.log("textStatus: ", textStatus);
+              console.log("jQxhr: ", jQxhr);
+
+              // Show/Hide sections.
+              $("#signUpResults").removeClass("hidden");
+              $("#signUpForm").addClass("hidden");
+
+              $("#usernameLabel").html(data.username);
+              $("#emailLabel").html(data.email);
+
+              $("#signUpStatus").html("OKAY");
+            },
+            error: function(jqXhr, textStatus, errorThrown) {
+              $("#signUpStatus").html(
+                "Error: ",
+                textStatus,
+                " | ",
+                errorThrown
+              );
+            }
+          }); // ...ajax.
+        }); // ...button click.
+      }); // ...document.ready
+    </script>
+  </head>
+  <body>
+    <h1 class="title-text">Sign Up</h1>
+    <form id="signUpForm">
+      <label for="username" class="required">Username</label>
+      <input type="text" name="username" id="username" />
+      <p class="input-rules">
+        Start with a letter, 4 to 16 letters or numbers
+      </p>
+      <label for="email" class="required">Email</label>
+      <input type="text" name="email" id="email" />
+      <button
+        name="checkUserOrEmailExistsButton"
+        id="checkUserOrEmailExistsButton"
+      >
+        Check Username/Email
+      </button>
+      <p class="message">
+        &nbsp;
+        <span id="userCheckDisplayErr" class="errorMessage"></span>
+        <span id="userCheckDisplayOk" class="successMessage"></span>
+      </p>
+      <label for="firstName" class="required">First Name</label>
+      <input type="text" name="firstName" id="firstName" />
+      <p class="input-rules">
+        2 to 16 letters
+      </p>
+      <label for="lastName" class="required">Last Name</label>
+      <input type="text" name="lastName" id="lastName" />
+      <p class="input-rules">
+        2 to 16 letters
+      </p>
+      <label for="password" class="required">Password</label>
+      <input type="password" name="password" id="password" />
+      <label for="passwordRepeat" class="required" id="passwordRepeatLabel"
+        >Re-Type Password</label
+      >
+      <input type="password" name="passwordRepeat" id="passwordRepeat" />
+      <p class="input-rules">
+        8 to 32 letters, numbers, symbols<br />
+        ! @ # $ % & * ~ ? - = _ + ^
+      </p>
+      <p id="validationDisplay" class="message errorMessage"></p>
+      <button id="signUpButton">Sign Up</button>
+      <p class="required-explained">
+        Fields marked with <strong>*</strong> are required.
+      </p>
+      <p><a href="login.html" class="small-link">sign-in page</a></p>
+    </form>
+    <div id="signUpResults" class="hidden">
+      <h3>Successfully signed up <span id="usernameLabel"></span>!</h3>
+      <p>
+        Check your email (<span id="emailLabel"></span>) for an account
+        validation link.
+      </p>
+      <p><a href="login.html" class="small-link">sign-in page</a></p>
+    </div>
+  </body>
+</html>

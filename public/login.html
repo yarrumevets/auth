@@ -1,0 +1,109 @@
+<html>
+  <head>
+    <title>yarrumevets.com | sign-in</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+      // TODO:
+      //   store user's name in local storage
+      //   display login error messages
+      //   redirect
+
+      $(document).ready(function() {
+        let bearerToken;
+        const rememberMeCheckbox = $("#rememberme");
+
+        // Check the remember me button if the token was saved in local storage.
+        const storedToken = localStorage.getItem("token");
+        if (storedToken) {
+          rememberMeCheckbox.attr("checked", true);
+          // Will always use the session's token value so it must be copied over.
+          sessionStorage.setItem("token", storedToken);
+        }
+
+        // Forget token next session.
+        $("#forgetMeButton").click(e => {
+          console.log("forget");
+          e.preventDefault();
+          e.stopPropagation();
+          localStorage.removeItem("token");
+        });
+
+        // Logout
+        $("#logoutButton").click(e => {
+          e.preventDefault();
+          e.stopPropagation();
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+        });
+
+        // Do the login
+        $("#loginButton").click(function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Remove the error message. @TODO: remove this when clearing on focus setup.
+          $("#errorMessage").html("");
+
+          const username = $("#username").val();
+          const password = $("#password").val();
+
+          const formData = {
+            username: username,
+            password: password
+          };
+
+          const appPath = window.location.pathname.split("/")[1]; //
+          $.ajax({
+            url: "/" + appPath + "/login",
+            type: "post",
+            contentType: "application/json",
+            processData: false,
+            data: JSON.stringify(formData),
+            success: function(data, textStatus, jQxhr) {
+              const rememberMe = rememberMeCheckbox.is(":checked");
+              const loginTime = new Date().toISOString();
+              sessionStorage.setItem("token", data.token);
+              sessionStorage.setItem("lastLogin", loginTime);
+              // Save the token or remove it from local storage depending on user's choice to remain logged in.
+              if (rememberMe) {
+                localStorage.setItem("token", data.token);
+              } else {
+                localStorage.removeItem("token");
+              }
+              localStorage.setItem("lastLogin", loginTime);
+            },
+            error: function(jqXhr, textStatus, errorThrown) {
+              console.log("Login error: ", errorThrown);
+              $("#errorMessage").html("Invalid username or password."); // @TODO: remove on focus input.
+            }
+          }); // ...ajax.
+        }); // ...button click.
+      }); // ...document.ready
+    </script>
+  </head>
+  <body>
+    <h1 class="title-text">Sign In</h1>
+    <form>
+      <label for="username">Username</label>
+      <input type="text" name="username" id="username" />
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" />
+      <label for="rememberme">Remember Me</label>
+      <input type="checkbox" name="rememberme" id="rememberme" />
+      <p class="errorText"></p>
+      <button id="loginButton">Sign In</button>
+      <p id="errorMessage" class="message errorMessage"></p>
+      <p>
+        <span id="forgetMeButton">Forget Me</span> |
+        <span id="logoutButton">Sign Out</span>
+      </p>
+    </form>
+    <p>
+      <a href="signup.html" class="small-link">sign-up page</a> |
+      <a href="resetpasswordrequest.html" class="small-link"
+        >forgot password?</a
+      >
+    </p>
+  </body>
+</html>

@@ -1,0 +1,115 @@
+body {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  text-align: center;
+}
+
+input {
+  margin: 5px auto 25px;
+}
+
+input[type="text"],
+input[type="password"] {
+  display: block;
+  font-size: 20px;
+  width: 50%;
+}
+
+input[type="checkbox"] {
+  display: block;
+}
+
+.input-rules {
+  font-size: 10px;
+  color: gray;
+  margin-top: -20px;
+  margin-bottom: 20px;
+}
+
+/* input::placeholder {
+  font-size: 10px;
+  padding-left: 10px;
+} */
+
+label {
+  display: block;
+  margin: 5px auto;
+  font-size: 12px;
+}
+
+button {
+  width: 50%;
+  height: 30px;
+  margin: 15px auto;
+}
+
+hr {
+  width: 80%;
+  border: 0;
+  height: 1px;
+  background: #ccc;
+}
+
+.title-text {
+  margin-top: 50px;
+}
+
+.display-stats-wrapper {
+  text-align: left;
+}
+
+.display-stats {
+  font-size: 8px;
+  color: red;
+}
+
+.display-stats.check {
+  color: green;
+}
+
+.hidden {
+  display: none;
+}
+
+.message {
+  margin-top: -10px;
+  margin-bottom: 10px;
+  font-size: 10px;
+}
+
+.errorMessage {
+  /* margin-top: -10px; */
+  color: red;
+}
+.successMessage {
+  /* margin-top: -10px; */
+  color: greenyellow;
+}
+
+.small-link {
+  text-decoration: none;
+  color: gray;
+  font-size: 10px;
+}
+
+.required::after {
+  content: "*";
+  color: red;
+}
+
+.required-explained {
+  color: red;
+  font-size: 10px;
+}
+
+#passwordRepeatLabel {
+  margin-top: -20px;
+}
+
+#checkUserOrEmailExistsButton {
+  margin-top: -10px;
+}
+
+#forgetMeButton:hover,
+#logOutButton:hover {
+  color: red;
+}

@@ -1,0 +1,187 @@
+<html>
+  <head>
+    <title>Sign-in</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+      // TODO:
+      //   store user's name in local storage
+      //   display login error messages
+      //   redirect
+
+      // Display various info about the login status.
+      function updateLoginStats() {
+        const sessionToken = sessionStorage.getItem("token");
+        const savedToken = localStorage.getItem("token");
+        if (sessionToken) {
+          $("#sessionStorageStatus")
+            .html("√")
+            .addClass("check");
+        } else {
+          $("#sessionStorageStatus")
+            .html("x")
+            .removeClass("check");
+        }
+        if (savedToken) {
+          $("#localStorageStatus")
+            .html("√")
+            .addClass("check");
+        } else {
+          $("#localStorageStatus")
+            .html("x")
+            .removeClass("check");
+        }
+        const token = sessionToken || savedToken;
+        if (token) {
+          $("#tokenDisplay")
+            .html(`√ ${token}`)
+            .addClass("check");
+        } else {
+          $("#tokenDisplay")
+            .html(`x`)
+            .removeClass("check");
+        }
+      }
+
+      $(document).ready(function() {
+        let bearerToken;
+        const rememberMeCheckbox = $("#rememberme");
+
+        // Check the remember me button if the token was saved in local storage.
+        const storedToken = localStorage.getItem("token");
+        if (storedToken) {
+          rememberMeCheckbox.attr("checked", true);
+          // Will always use the session's token value so it must be copied over.
+          sessionStorage.setItem("token", storedToken);
+        }
+
+        updateLoginStats();
+
+        // Forget token next session.
+        $("#forgetMeButton").click(e => {
+          e.preventDefault();
+          e.stopPropagation();
+          localStorage.removeItem("token");
+          updateLoginStats();
+        });
+
+        // Logout
+        $("#logoutButton").click(e => {
+          e.preventDefault();
+          e.stopPropagation();
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          updateLoginStats();
+        });
+
+        // Do the login
+        $("#loginButton").click(function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Remove the error message. @TODO:
+          $("#errorMessage").html("");
+
+          const username = $("#username").val();
+          const password = $("#password").val();
+
+          const formData = {
+            username: username,
+            password: password
+          };
+
+          const appPath = window.location.pathname.split("/")[1]; //
+          $.ajax({
+            url: "/" + appPath + "/login",
+            type: "post",
+            contentType: "application/json",
+            processData: false,
+            data: JSON.stringify(formData),
+            success: function(data, textStatus, jQxhr) {
+              const rememberMe = rememberMeCheckbox.is(":checked");
+              const loginTime = new Date().toISOString();
+              sessionStorage.setItem("token", data.token);
+              sessionStorage.setItem("lastLogin", loginTime);
+              // Save the token or remove it from local storage depending on user's choice to remain logged in.
+              if (rememberMe) {
+                localStorage.setItem("token", data.token);
+              } else {
+                localStorage.removeItem("token");
+              }
+              localStorage.setItem("lastLogin", loginTime);
+              updateLoginStats();
+            },
+            error: function(jqXhr, textStatus, errorThrown) {
+              console.log("Login error: ", errorThrown);
+              $("#errorMessage").html("Invalid username or password.");
+            }
+          }); // ...ajax.
+        }); // ...button click.
+
+        // Test login token with API call.
+        $("#testButton").click(function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const bearerToken = sessionStorage.getItem("token");
+          const appPath = window.location.pathname.split("/")[1]; //
+          $.ajaxSetup({
+            beforeSend: function(xhr) {
+              xhr.setRequestHeader("Authorizatrion", `Bearer ${bearerToken}`);
+            }
+          });
+          $.ajax({
+            url: "/" + appPath + "/private/secret.txt",
+            type: "get",
+            contentType: false,
+            processData: false,
+            headers: {
+              authorization: `Bearer ${bearerToken}`
+            },
+            success: function(data, textStatus, jQxhr) {
+              $("#tokenTestResults")
+                .html("Authorized √")
+                .addClass("check");
+            },
+            error: function(jqXhr, textStatus, errorThrown) {
+              $("#tokenTestResults")
+                .html("Unauthorized x")
+                .removeClass("check");
+            }
+          }); // ...ajax.
+        }); // ...button test token click.
+      }); // ...document.ready
+    </script>
+  </head>
+  <body>
+    <h1>Sign In</h1>
+    <p><a href="signup.html">sign-up</a></p>
+    <form>
+      <label for="username">Username</label>
+      <input type="text" name="username" id="username" />
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" />
+      <label for="rememberme">Remember Me</label>
+      <input type="checkbox" name="rememberme" id="rememberme" />
+      <p class="errorText"></p>
+      <button id="loginButton">Sign In</button>
+      <button id="forgetMeButton">Forget Me</button>
+      <button id="logoutButton">Sign Out</button>
+      <button id="testButton">Test Token</button>
+    </form>
+    <hr />
+    <div class="display-stats-wrapper">
+      <p>Sign-in Status</p>
+      <p>Token: <span class="display-stats" id="tokenDisplay"></span></p>
+      <p>
+        Session Login:
+        <span class="display-stats" id="sessionStorageStatus"></span>
+      </p>
+      <p>
+        Remember: <span class="display-stats" id="localStorageStatus"></span>
+      </p>
+      <p>
+        Token Test: <span class="display-stats" id="tokenTestResults"></span>
+      </p>
+    </div>
+  </body>
+</html>

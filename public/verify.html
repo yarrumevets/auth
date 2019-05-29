@@ -1,0 +1,48 @@
+<html>
+  <head>
+    <title>Verify Email</title>
+    <!-- <link rel="stylesheet" href="style.css" /> -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+      $(document).ready(function() {
+        // Do the login
+        $("#verifyButton").click(function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Get hash param from query string.
+          const qs = window.location.search;
+          const queryStringParams = {};
+          qs.split("?")[1]
+            .split("&")
+            .forEach(qsp => {
+              queryStringParams[`${qsp.split("=")[0]}`] = `${
+                qsp.split("=")[1]
+              }`;
+            });
+          const hash = queryStringParams.hash;
+
+          const appPath = window.location.pathname.split("/")[1]; //
+          $.ajax({
+            url: "/" + appPath + "/api/verify/" + hash,
+            type: "get",
+            success: function(data, textStatus, jQxhr) {
+              $("#statusText").html(
+                "Success! <a href='/auth/login.html'>go sign in!</a>"
+              );
+            },
+            error: function(jqXhr, textStatus, errorThrown) {
+              $("#statusText").html("Error! - ");
+            }
+          }); // ...ajax.
+        }); // ...button click.
+      }); // ...document.ready
+    </script>
+  </head>
+  <body>
+    <h1>Account Email Verification</h1>
+    <p><a href="signup.html">sign-up</a></p>
+    <button id="verifyButton">Verify your email address</button>
+    <p id="statusText">Pending...</p>
+  </body>
+</html>

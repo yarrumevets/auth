@@ -273,14 +273,14 @@ app.post("/signup", (req, res) => {
           console.log("user from db: ", userFromDb);
           console.log("err: ", err);
 
-          sendVerificationEmail(verifyEmailHash, email, firstName);
+          sendVerificationEmail(res, verifyEmailHash, email, firstName);
         }
       );
     }
   ); // ...db.
 });
 
-const sendVerificationEmail = (hash, userEmail, userFirstName) => {
+const sendVerificationEmail = (res, hash, userEmail, userFirstName) => {
   var transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {

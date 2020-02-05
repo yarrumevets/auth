@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const port = 3987;
 
-const secret = require("./secret.config.js");
+const secret = require("../secret.config.js");
 
 // Server URL
 const ENV = process.env.NODE_ENV; // 'production'/'development'
@@ -174,9 +174,7 @@ app.post("/check", (req, res) => {
 app.get("/api/verify/:hash", (req, res) => {
   // get hash from req params.
   const verifyHash = req.params["hash"];
-
   console.log("verify this hash: ", verifyHash);
-
   // fetch user by hash
   // check db for existing user or email
   db.collection("users").findOne(
@@ -186,7 +184,6 @@ app.get("/api/verify/:hash", (req, res) => {
 
       if (!err && results) {
         // set account status to "verified"
-
         db.collection("users").updateOne(
           { verifyEmailHash: verifyHash },
           {
@@ -210,7 +207,6 @@ app.get("/api/verify/:hash", (req, res) => {
 app.post("/signup", (req, res) => {
   // Get user entered data.
   const { username, password, email, firstName, lastName } = req.body;
-
   // Validation.
   const nameRegex = /^([a-zA-Z]){1,16}$/; // 2 to 16 letters.
   const usernameRegex = /^[a-zA-Z]([a-zA-Z0-9]){3,16}$/; // 4 to 16 letters or numbers, first must be a letter.
@@ -242,13 +238,11 @@ app.post("/signup", (req, res) => {
         res.send("Username or email already taken.");
         return;
       }
-
       // Hash the password.
       const passwordHash = crypto
         .createHmac("sha256", passwordSecret)
         .update(password)
         .digest("hex");
-
       // Create email verification hash.
       var current_date = new Date().valueOf().toString();
       var random = Math.random().toString();
@@ -256,7 +250,6 @@ app.post("/signup", (req, res) => {
         .createHash("sha1")
         .update(current_date + random)
         .digest("hex");
-
       // Add user to database.
       db.collection("users").insert(
         {
@@ -294,7 +287,6 @@ const sendVerificationEmail = (res, hash, userEmail, userFirstName) => {
     subject: "yarrumevets.com | verify email address for sign-up",
     html: `<h2>yarrumevets.com account verification</h2><p>${userFirstName}, you need to veryify your email address by clicking the link below:</p><p><a href='${serverRootUrl}/auth/verify?hash=${hash}'>${serverRootUrl}/auth/verify?hash=${hash}</a></p>`
   };
-
   // Send the confirmation email.
   transporter.sendMail(mailOptions, function(error, info) {
     if (error) {
@@ -329,7 +321,6 @@ app.post("/resetpasswordrequest", (req, res) => {
     }
   }); // ..db find user by email.
 });
-
 const sendPasswordResetEmail = (email, res) => {
   var current_date = new Date().valueOf().toString();
   var random = Math.random().toString();
@@ -337,7 +328,6 @@ const sendPasswordResetEmail = (email, res) => {
     .createHash("sha1")
     .update(current_date + random)
     .digest("hex");
-
   db.collection("users").updateOne(
     { email },
     {
@@ -360,7 +350,6 @@ const sendPasswordResetEmail = (email, res) => {
         subject: "yarrumevets.com | reset password",
         html: `<h2>yarrumevets.com password reset</h2><p>There was a reset password request for this email address.</p>Click the link below to reset your password.<p></p><p><a href='${serverRootUrl}/auth/resetpassword.html?hash=${hash}'>${serverRootUrl}/auth/resetpassword.html?hash=${hash}</a></p>`
       };
-
       // Send the reset email.
       transporter.sendMail(mailOptions, function(error, info) {
         if (error) {
@@ -381,18 +370,15 @@ const sendPasswordResetEmail = (email, res) => {
 // Send reset password email
 app.post("/api/resetpassword", (req, res) => {
   const { hash, password } = req.body;
-
   // Hash the new password
   const passwordHash = crypto
     .createHmac("sha256", passwordSecret)
     .update(password)
     .digest("hex");
-
   db.collection("users").findOne(
     { resetPasswordHash: hash },
     (err, results) => {
       console.log("results: ", results, " err: ", err);
-
       // If results return a user. Arbitrary test.
       if (results && results.resetPasswordHash === hash) {
         db.collection("users").updateOne(

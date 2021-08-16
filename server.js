@@ -2,8 +2,6 @@ const express = require("express");
 const app = express();
 const port = 3987;
 
-const secret = require("../secret.config.js");
-
 // Server URL
 const ENV = process.env.NODE_ENV; // 'production'/'development'
 const serverRootUrl =
@@ -19,6 +17,7 @@ var mongoURL = "mongodb://localhost:27017";
 var db;
 
 // Encryption stuff.
+const secret = require("../secret.config.js");
 const jwt = require("jwt-simple");
 let tokenSecret;
 const crypto = require("crypto");
@@ -39,7 +38,7 @@ app.set("trust proxy", true);
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
-  console.log(new Date().toISOString());
+  console.log(new Date().toISOString(), " - ", req.query, " url: ", req.url);
   // Create a secret key with the user's IP. Will have to login again from another location.
   tokenSecret = secret.tokenSecret + req.ip; // @TODO: test/fix this.
   next();
@@ -78,6 +77,7 @@ passport.use(
 // Bearer strategy.
 passport.use(
   new BearerStrategy((token, done) => {
+    console.log("bearer strategy.");
     try {
       const { username } = jwt.decode(token, tokenSecret);
       console.log("Username from TOKEN: ", username);
@@ -99,44 +99,6 @@ passport.use(
   })
 );
 
-// -----------------------------------------------------------------------------
-
-// Hash Generator
-app.get("/api/hash/:seed", (req, res) => {
-  const seed = req.params["seed"];
-  var current_date = new Date().valueOf().toString();
-  var random = Math.random().toString();
-
-  console.log("seed: ", seed);
-  console.log("current_date: ", current_date);
-  console.log("random: ", random);
-
-  let hash = crypto
-    .createHmac("sha256", passwordSecret)
-    .update(seed)
-    .digest("hex");
-
-  console.log("hash: ", hash);
-
-  hash = crypto
-    .createHmac("sha256", hash)
-    .update(current_date)
-    .digest("hex");
-
-  console.log("hash: ", hash);
-
-  hash = crypto
-    .createHmac("sha256", hash)
-    .update(random)
-    .digest("hex");
-
-  console.log("hash: ", hash);
-
-  res.send(hash);
-});
-
-// -----------------------------------------------------------------------------
-
 // Do login.
 app.post(
   "/login",
@@ -144,7 +106,7 @@ app.post(
   (req, res) => {
     console.log("/login");
     res.send({
-      token: req.user
+      token: req.user,
     });
   }
 );
@@ -172,6 +134,7 @@ app.post("/check", (req, res) => {
 
 // Verify email with hash.
 app.get("/api/verify/:hash", (req, res) => {
+  console.log("req params: ", req.params);
   // get hash from req params.
   const verifyHash = req.params["hash"];
   console.log("verify this hash: ", verifyHash);
@@ -187,7 +150,7 @@ app.get("/api/verify/:hash", (req, res) => {
         db.collection("users").updateOne(
           { verifyEmailHash: verifyHash },
           {
-            $set: { status: "verified" }
+            $set: { status: "verified" },
           },
           (err, result) => {
             console.log("Account verified!");
@@ -230,7 +193,7 @@ app.post("/signup", (req, res) => {
   db.collection("users").findOne(
     { $or: [{ username: username }, { email: email }] },
     (err, results) => {
-      console.log("RESULTS: ", results);
+      console.log("<> RESULTS: ", results);
       if (results) {
         res.status(500);
         res.send("Error sending confirmation email.");
@@ -259,9 +222,11 @@ app.post("/signup", (req, res) => {
           password: passwordHash,
           verifyEmailHash,
           status: "pending",
-          email
+          email,
         },
         (err, result) => {
+          console.log("err: ", err);
+          console.log("result: ", result);
           const userFromDb = result.ops[0];
           console.log("user from db: ", userFromDb);
           console.log("err: ", err);
@@ -278,17 +243,20 @@ const sendVerificationEmail = (res, hash, userEmail, userFirstName) => {
     service: "gmail",
     auth: {
       user: secret.gmailAccount,
-      pass: secret.gmailPassword
-    }
+      pass: secret.gmailPassword,
+    },
   });
   var mailOptions = {
     from: secret.gmailAccount,
     to: userEmail,
     subject: "yarrumevets.com | verify email address for sign-up",
-    html: `<h2>yarrumevets.com account verification</h2><p>${userFirstName}, you need to veryify your email address by clicking the link below:</p><p><a href='${serverRootUrl}/auth/verify?hash=${hash}'>${serverRootUrl}/auth/verify?hash=${hash}</a></p>`
+    html: `<h2>yarrumevets.com account verification</h2><p>${userFirstName}, you need to veryify your email address by clicking the link below:</p><p><a href='${serverRootUrl}/auth/api/verify/${hash}'>${serverRootUrl}/auth/api/verify/${hash}</a></p>`,
   };
+
+  console.log("sending email... ", mailOptions);
+
   // Send the confirmation email.
-  transporter.sendMail(mailOptions, function(error, info) {
+  transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
       console.log(error);
       res.status(500);
@@ -331,7 +299,7 @@ const sendPasswordResetEmail = (email, res) => {
   db.collection("users").updateOne(
     { email },
     {
-      $set: { resetPasswordHash: hash }
+      $set: { resetPasswordHash: hash },
     },
     (err, result) => {
       console.log("verify hash updated! Result: ", result, " err: ", err);
@@ -341,17 +309,17 @@ const sendPasswordResetEmail = (email, res) => {
         service: "gmail",
         auth: {
           user: secret.gmailAccount,
-          pass: secret.gmailPassword
-        }
+          pass: secret.gmailPassword,
+        },
       });
       var mailOptions = {
         from: secret.gmailAccount,
         to: email,
         subject: "yarrumevets.com | reset password",
-        html: `<h2>yarrumevets.com password reset</h2><p>There was a reset password request for this email address.</p>Click the link below to reset your password.<p></p><p><a href='${serverRootUrl}/auth/resetpassword.html?hash=${hash}'>${serverRootUrl}/auth/resetpassword.html?hash=${hash}</a></p>`
+        html: `<h2>yarrumevets.com password reset</h2><p>There was a reset password request for this email address.</p>Click the link below to reset your password.<p></p><p><a href='${serverRootUrl}/auth/resetpassword.html?hash=${hash}'>${serverRootUrl}/auth/resetpassword.html?hash=${hash}</a></p>`,
       };
       // Send the reset email.
-      transporter.sendMail(mailOptions, function(error, info) {
+      transporter.sendMail(mailOptions, function (error, info) {
         if (error) {
           console.log(error);
           res.status(500);
@@ -384,7 +352,7 @@ app.post("/api/resetpassword", (req, res) => {
         db.collection("users").updateOne(
           { resetPasswordHash: hash },
           {
-            $set: { password: passwordHash }
+            $set: { password: passwordHash },
           },
           (err, result) => {
             // @TODO - remove the reset password hash.
@@ -422,7 +390,7 @@ MongoClient.connect(mongoURL, { useNewUrlParser: true }, (err, client) => {
   } else {
     db = client.db("yarrumevets");
     console.log("Connected to db...");
-    app.listen(port, function() {
+    app.listen(port, function () {
       console.log(
         "Passport.js auth test server listening on port " + port + "..."
       );

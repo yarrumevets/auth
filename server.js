@@ -183,8 +183,6 @@ app.post("/signup", (req, res) => {
   if (!passwordRegex.test(password)) errors.push("password");
   if (errors.length) {
     res.status(500);
-    res.send("Error sending confirmation email.");
-    401;
     res.send(errors);
     return;
   }
@@ -195,9 +193,7 @@ app.post("/signup", (req, res) => {
     (err, results) => {
       console.log("<> RESULTS: ", results);
       if (results) {
-        res.status(500);
-        res.send("Error sending confirmation email.");
-        400;
+        res.status(500); // @TODO: create a better response mechanism. Probably a 200 with different content for FE
         res.send("Username or email already taken.");
         return;
       }
